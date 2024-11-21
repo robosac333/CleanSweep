@@ -1,5 +1,5 @@
-#ifndef INCLUDE_OBJECT_DETECTION_OBJECT_DETECTION_H_
-#define INCLUDE_OBJECT_DETECTION_OBJECT_DETECTION_H_
+#ifndef INCLUDE_CLEANSWEEP_OBJECT_DETECTION_HPP_
+#define INCLUDE_CLEANSWEEP_OBJECT_DETECTION_HPP_
 
 #include <vector>
 #include "rclcpp/rclcpp.hpp"
@@ -40,7 +40,7 @@ class ObjectDetection : public rclcpp::Node {
    * @param  none
    * @return none
    */
-  ObjectDetection();
+  explicit ObjectDetection();
 
   /**
    * @brief  Destructor
@@ -54,21 +54,34 @@ class ObjectDetection : public rclcpp::Node {
    * @param  Image data pointer from camera
    * @return void
    */
-  void processInput(const sensor_msgs::msg::Image::ConstPtr& imageData);
+  void processInput(const std::shared_ptr<sensor_msgs::msg::Image> imageData);
 
   /**
-   * @brief  Find and filter target object
+   * @brief  Find target object
    * @param  Input image
-   * @return bool Target found status and filtered image
+   * @return bool Target found status
    */
-  bool findTarget(cv::Mat image) + applyFilter(cv::Mat image);
+  bool findTarget(cv::Mat image);
+
+  /**
+   * @brief  Apply filter to image
+   * @param  Input image
+   * @return Filtered image
+   */
+  cv::Mat applyFilter(cv::Mat image);
 
   /**
    * @brief  Get target area from the image
-   * @param  Rectangle defining target area
+   * @return Rectangle defining target area
+   */
+  cv::Rect getTargetArea();
+
+  /**
+   * @brief  Set target area in the image
+   * @param  rect Rectangle defining target area
    * @return void
    */
-  cv::Rect getTargetArea() + setTargetArea(cv::Rect);
+  void setTargetArea(cv::Rect rect);
 
   /**
    * @brief  Get detection status
@@ -85,4 +98,4 @@ class ObjectDetection : public rclcpp::Node {
   void setDetectionStatus(bool status);
 };
 
-#endif  // INCLUDE_OBJECT_DETECTION_OBJECT_DETECTION_H_
+#endif  // INCLUDE_CLEANSWEEP_OBJECT_DETECTION_HPP_

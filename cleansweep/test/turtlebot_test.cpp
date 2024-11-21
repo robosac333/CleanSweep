@@ -2,22 +2,26 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
-#include "turtlebot/turtlebot.hpp"
-#include "obstacle_avoidance/obstacle_avoidance.hpp"
+#include "cleansweep/turtlebot.hpp"
+#include "cleansweep/obstacle_avoidance.hpp"
 
 class TurtleBotTest : public ::testing::Test {
  protected:
     void SetUp() override {
-        rclcpp::init(0, nullptr);
+        if (!rclcpp::ok()) {
+            rclcpp::init(0, nullptr);
+        }
         turtlebot_ = std::make_shared<TurtleBot>();
+        obstacle_avoidance_ = std::make_shared<ObstacleAvoidance>();
     }
 
     void TearDown() override {
         turtlebot_.reset();
-        rclcpp::shutdown();
+        obstacle_avoidance_.reset();
     }
 
     std::shared_ptr<TurtleBot> turtlebot_;
+    std::shared_ptr<ObstacleAvoidance> obstacle_avoidance_;
 };
 
 TEST_F(TurtleBotTest, TestDefaultConstructor) {
@@ -47,6 +51,5 @@ TEST_F(TurtleBotTest, TestResetPosition) {
 }
 
 TEST_F(TurtleBotTest, TestUpdatePosition) {
-    ObstacleAvoidance obstacleAvoidance;
-    EXPECT_NO_THROW(turtlebot_->updatePosition(obstacleAvoidance));
+    EXPECT_NO_THROW(turtlebot_->updatePosition(*obstacle_avoidance_));
 }

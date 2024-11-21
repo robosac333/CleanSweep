@@ -1,88 +1,53 @@
-#ifndef INCLUDE_TURTLEBOT_TURTLEBOT_H_
-#define INCLUDE_TURTLEBOT_TURTLEBOT_H_
+#ifndef INCLUDE_CLEANSWEEP_TURTLEBOT_HPP_
+#define INCLUDE_CLEANSWEEP_TURTLEBOT_HPP_
 
-// ROS2 headers
+
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "object_detection/object_detection.hpp"
-#include "obstacle_avoidance/obstacle_avoidance.hpp"
+#include "cleansweep/object_detection.hpp"
+#include "cleansweep/obstacle_avoidance.hpp"
 
 class TurtleBot : public rclcpp::Node {
  private:
-  /// Node handle for ROS2 communication
-  rclcpp::Node::SharedPtr nodeId;
+  // Reorder members to match initialization order
+  float forwardSpeed;
+  float rotationSpeed;
+  float lastForwardSpeed;
+  float lastRotationSpeed;
+  const int updateFrequency;
+  
   /// Publisher for motion control commands
   geometry_msgs::msg::Twist motionControl;
   /// Publisher for robot speed
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr speedPublisher;
-  /// Current forward speed of the robot
-  float forwardSpeed;
-  /// Current rotation speed of the robot
-  float rotationSpeed;
-  /// Last recorded forward speed
-  float lastForwardSpeed;
-  /// Last recorded rotation speed
-  float lastRotationSpeed;
-  /// Update frequency for publishing commands
-  const int updateFrequency;
 
  public:
   /**
    * @brief   Default constructor
-   * @param   none
-   * @return  none
    */
   TurtleBot();
 
   /**
    * @brief   Parameterized constructor
-   * @param   forwardSpeed Initial forward speed
-   * @param   rotationSpeed Initial rotation speed
-   * @return  none
+   * @param   fSpeed Initial forward speed
+   * @param   rSpeed Initial rotation speed
    */
-  TurtleBot(float forwardSpeed, float rotationSpeed);
+  TurtleBot(float fSpeed, float rSpeed);
 
   /**
    * @brief   Destructor
-   * @param   none
-   * @return  none
    */
-  ~TurtleBot();
+  ~TurtleBot() override;
 
-  /**
-   * @brief   Set the forward speed of the robot
-   * @param   speed Forward speed value
-   * @return  float Current forward speed
-   */
   float setForwardSpeed(float speed);
-
-  /**
-   * @brief   Set the rotation speed of the robot
-   * @param   speed Rotation speed value
-   * @return  float Current rotation speed
-   */
   float setRotationSpeed(float speed);
-
-  /**
-   * @brief   Update the robot's position considering obstacle avoidance
-   * @param   obstacleAvoidance Reference to ObstacleAvoidance object
-   * @return  void
-   */
   void updatePosition(ObstacleAvoidance& obstacleAvoidance);
-
-  /**
-   * @brief   Reset the robot's position
-   * @param   none
-   * @return  bool Success status of reset operation
-   */
   bool resetPosition();
-
-  /**
-   * @brief   Verify if there's been a change in speed
-   * @param   none
-   * @return  bool True if speed has changed, false otherwise
-   */
   bool verifySpeedChange();
+
+  // Getters for testing
+  float getForwardSpeed() const { return forwardSpeed; }
+  float getRotationSpeed() const { return rotationSpeed; }
 };
 
-#endif  // INCLUDE_TURTLEBOT_TURTLEBOT_H_
+#endif // INCLUDE_CLEANSWEEP_TURTLEBOT_HPP_

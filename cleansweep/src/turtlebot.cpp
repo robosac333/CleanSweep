@@ -1,30 +1,67 @@
-// turtlebot.cpp
-#include "turtlebot/turtlebot.hpp"
+#include "cleansweep/turtlebot.hpp"
 
-TurtleBot::TurtleBot() {
+TurtleBot::TurtleBot()
+    : Node("turtlebot_node"),
+      forwardSpeed(0.0),
+      rotationSpeed(0.0),
+      lastForwardSpeed(0.0),
+      lastRotationSpeed(0.0),
+      updateFrequency(10) {
+    speedPublisher = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 }
 
-TurtleBot::TurtleBot(float fSpeed, float rSpeed) {
+TurtleBot::TurtleBot(float fSpeed, float rSpeed)
+    : Node("turtlebot_node"),
+      forwardSpeed(fSpeed),
+      rotationSpeed(rSpeed),
+      lastForwardSpeed(0.0),
+      lastRotationSpeed(0.0),
+      updateFrequency(10) {
+    speedPublisher = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 }
 
-TurtleBot::~TurtleBot() {
-}
+TurtleBot::~TurtleBot() = default;
 
 float TurtleBot::setForwardSpeed(float speed) {
-    return 0.0;
+    lastForwardSpeed = forwardSpeed;
+    forwardSpeed = speed;
+    return forwardSpeed;
 }
 
 float TurtleBot::setRotationSpeed(float speed) {
-    return 0.0;
+    lastRotationSpeed = rotationSpeed;
+    rotationSpeed = speed;
+    return rotationSpeed;
 }
 
 void TurtleBot::updatePosition(ObstacleAvoidance& obstacleAvoidance) {
+    if (obstacleAvoidance.getObstacleStatus()) {
+        // Stop if obstacle detected
+        motionControl.linear.x = 0.0;
+        motionControl.angular.z = 0.0;
+    } else {
+        // Move normally
+        motionControl.linear.x = forwardSpeed;
+        motionControl.angular.z = rotationSpeed;
+    }
+    
+    speedPublisher->publish(motionControl);
 }
 
 bool TurtleBot::resetPosition() {
-    return false;
+    forwardSpeed = 0.0;
+    rotationSpeed = 0.0;
+    lastForwardSpeed = 0.0;
+    lastRotationSpeed = 0.0;
+    
+    motionControl.linear.x = 0.0;
+    motionControl.angular.z = 0.0;
+    speedPublisher->publish(motionControl);
+    
+    return true;
 }
 
 bool TurtleBot::verifySpeedChange() {
-    return false;
+    return (forwardSpeed != lastForwardSpeed) || 
+           (rotationSpeed != lastRotationSpeed);
 }
