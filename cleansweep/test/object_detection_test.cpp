@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
-#include "object_detection/object_detection.hpp"
+#include "cleansweep/object_detection.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "cv_bridge/cv_bridge.h"
 #include "opencv2/opencv.hpp"
@@ -10,13 +10,14 @@
 class ObjectDetectionTest : public ::testing::Test {
  protected:
     void SetUp() override {
-        rclcpp::init(0, nullptr);
+        if (!rclcpp::ok()) {
+            rclcpp::init(0, nullptr);
+        }
         object_detection_ = std::make_shared<ObjectDetection>();
     }
 
     void TearDown() override {
         object_detection_.reset();
-        rclcpp::shutdown();
     }
 
     std::shared_ptr<ObjectDetection> object_detection_;
@@ -44,10 +45,7 @@ TEST_F(ObjectDetectionTest, TestApplyFilter) {
 
 TEST_F(ObjectDetectionTest, TestGetTargetArea) {
     cv::Rect result = object_detection_->getTargetArea();
-    EXPECT_EQ(result.x, 0);
-    EXPECT_EQ(result.y, 0);
-    EXPECT_EQ(result.width, 0);
-    EXPECT_EQ(result.height, 0);
+    EXPECT_EQ(result, cv::Rect());
 }
 
 TEST_F(ObjectDetectionTest, TestSetTargetArea) {
@@ -56,10 +54,7 @@ TEST_F(ObjectDetectionTest, TestSetTargetArea) {
 }
 
 TEST_F(ObjectDetectionTest, TestDetectionStatus) {
-    // Test initial status
     EXPECT_FALSE(object_detection_->getDetectionStatus());
-    
-    // Test setting status
-    EXPECT_NO_THROW(object_detection_->setDetectionStatus(true));
-    EXPECT_FALSE(object_detection_->getDetectionStatus()); // Still false in stub
+    object_detection_->setDetectionStatus(true);
+    EXPECT_FALSE(object_detection_->getDetectionStatus());  // Will be false in stub
 }

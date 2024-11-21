@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
-#include "obstacle_avoidance/obstacle_avoidance.hpp"
+#include "cleansweep/obstacle_avoidance.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
 
 class ObstacleAvoidanceTest : public ::testing::Test {
