@@ -5,6 +5,46 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Add coverage options
+option(WANT_COVERAGE "Enable coverage reporting" ON)
+if(WANT_COVERAGE)
+  add_compile_options(--coverage -fprofile-arcs -ftest-coverage)
+  add_link_options(--coverage -fprofile-arcs -ftest-coverage)
+endif()
+
+# Doxygen support
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  set(DOXYGEN_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/docs)
+  set(DOXYGEN_COLLABORATION_GRAPH YES)
+  set(DOXYGEN_EXTRACT_ALL YES)
+  set(DOXYGEN_CLASS_DIAGRAMS YES)
+  set(DOXYGEN_HIDE_UNDOC_RELATIONS NO)
+  set(DOXYGEN_HAVE_DOT YES)
+  set(DOXYGEN_CLASS_GRAPH YES)
+  set(DOXYGEN_CALL_GRAPH YES)
+  set(DOXYGEN_CALLER_GRAPH YES)
+  set(DOXYGEN_COLLABORATION_GRAPH YES)
+  set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
+  set(DOXYGEN_EXTRACT_PRIVATE YES)
+  set(DOXYGEN_EXTRACT_PACKAGE YES)
+  set(DOXYGEN_EXTRACT_STATIC YES)
+  set(DOXYGEN_EXTRACT_LOCALMETHODS YES)
+  set(DOXYGEN_UML_LOOK YES)
+  set(DOXYGEN_UML_LIMIT_NUM_FIELDS 50)
+  set(DOXYGEN_TEMPLATE_RELATIONS YES)
+  set(DOXYGEN_DOT_GRAPH_MAX_NODES 100)
+  set(DOXYGEN_MAX_DOT_GRAPH_DEPTH 0)
+  set(DOXYGEN_DOT_TRANSPARENT YES)
+
+  # Create Doxygen target
+  doxygen_add_docs(docs
+    ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/include
+    COMMENT "Generate documentation"
+  )
+endif()
+
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -12,11 +52,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
-
-
-# Print CV Bridge variables for debugging
-# message(STATUS "cv_bridge_INCLUDE_DIRS: ${cv_bridge_INCLUDE_DIRS}")
-# message(STATUS "cv_bridge_LIBRARIES: ${cv_bridge_LIBRARIES}")
 
 # Include directories
 include_directories(
@@ -128,4 +163,21 @@ if(BUILD_TESTING)
   target_link_libraries(turtlebot_test turtlebot)
 endif()
 
+if(WANT_COVERAGE)
+  # Custom target for lcov
+  add_custom_target(coverage
+    COMMAND lcov --directory . --capture --output-file coverage.info
+    COMMAND lcov --remove coverage.info '/usr/*' '*/test/*' --output-file coverage.info
+    COMMAND lcov --list coverage.info
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Generating coverage report"
+  )
+
+  #Ccustom target for gcovr HTML report
+  add_custom_target(coverage_html
+    COMMAND gcovr -r ${CMAKE_SOURCE_DIR} --html --html-details -o coverage.html
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Generating HTML coverage report"
+  )
+endif()
 ament_package()

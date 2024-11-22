@@ -1,63 +1,69 @@
-##############################################################################
-#
-# GitGub CI workflow syntax spec:
-#    https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
-#
-# CodeCov github action setup:
-#    https://github.com/codecov/codecov-action
-#
-# CodeCov badge setup:
-#    https://docs.codecov.com/docs/status-badges
-#
-# version 1.1
-##############################################################################
-
 name: Run Unit Test and Upload Coverage Report
 
 on:
-  # Triggered whenever push to main
   push:
     branches: [ "main" ]
-
-  # Triggered whenever a pull request is created on main
   pull_request:
     branches: [ "main" ]
     types: [opened]
-
-  # Allow manual trigger
   workflow_dispatch:
 
 jobs:
   build-run-upload:
-    # Create a container of the latest Ubuntu, other values could be
-    # ubuntu-latest, ubuntu-22.04, etc.
     runs-on: ubuntu-22.04
-
+    
     steps:
-      # We want to use GitHub CI checkout version 3 to check out our branch
       - uses: actions/checkout@v3
 
-      # Install some system pacakges
-      - name: Install build packages
+      # Install ROS 2 Humble
+      - name: Install ROS 2 Humble
         run: |
           sudo apt update
           sudo apt install -y software-properties-common
-          sudo apt install -y doxygen lcov gcovr
+          sudo add-apt-repository universe
+          sudo apt update && sudo apt install -y curl
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+          sudo apt update
+          sudo apt install -y ros-humble-ros-base
+          sudo apt install -y python3-colcon-common-extensions
+          sudo apt install -y ros-humble-cv-bridge
+          sudo apt install -y ros-humble-ament-cmake-gtest
 
-      # Build, run unit test, and generate coverage report
-      - name: Configure CMake flags and build exectables
+      # Install dependencies for coverage and documentation
+      - name: Install build packages
         run: |
-          cmake -D WANT_COVERAGE=ON -D CMAKE_BUILD_TYPE=Debug -S ./ -B build/
-          cmake --build build/ --clean-first --target all test_coverage
-          cat build/test_coverage.info
+          sudo apt install -y doxygen lcov gcovr
+          sudo apt install -y libopencv-dev
+
+      # Source ROS 2
+      - name: Source ROS 2
+        run: |
+          source /opt/ros/humble/setup.bash
+          echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+
+      # Create workspace and build
+      - name: Build and Test
+        run: |
+          mkdir -p ros2_ws/src
+          cp -r ${{github.workspace}} ros2_ws/src/
+          cd ros2_ws
+          source /opt/ros/humble/setup.bash
+          colcon build --cmake-args -DWANT_COVERAGE=ON
+          source install/setup.bash
+          colcon test --packages-select cleansweep
+          cd build/cleansweep
+          make coverage
+          lcov --capture --directory . --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*/test/*' '*_deps/*' --output-file coverage.info
 
       # Upload coverage result to CodeCov
       - name: Upload coverage result to CodeCov
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }} # required (must add token in your github repo)
-          files: ${{github.workspace}}/build/test_coverage.info
-          fail_ci_if_error: true # optional (default = false)
-          verbose: true # optional (default = false)
-          disable_search: true # optional (default = false)
-          plugin: none         # optional (xcode, gcov, pycoverage)
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{github.workspace}}/ros2_ws/build/cleansweep/coverage.info
+          fail_ci_if_error: true
+          verbose: true
+          disable_search: true
+          plugin: none
