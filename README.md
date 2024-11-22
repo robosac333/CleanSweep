@@ -65,5 +65,5 @@ Please find the links to the Sprint Planning and Review for our AIP Process [her
 ## Phase 0
 Phase 0 focuses on the project proposal and provides information about the Agile Iterative Process (AIP) model to be used for software development throughout the project.
 
-The Phase 0 project proposal, located [here](https://docs.google.com/document/d/16jI77T4_1Mh9JJJpJmIrVLOkXnPECacXB7AYQt7YNdw/edit?usp=sharing) , outlines a comprehensive plan and vision for the project, detailing the implementation strategies. It covers all the elements of a standard software development plan, offering an in-depth analysis.
+The Phase 0 project proposal, located [here](https://docs.google.com/document/d/1Ns__dJgFWKeA-ZFtLBhoYQTPA_1JrZVMxj8JlWUA-ok/edit?usp=sharing) , outlines a comprehensive plan and vision for the project, detailing the implementation strategies. It covers all the elements of a standard software development plan, offering an in-depth analysis.
  
