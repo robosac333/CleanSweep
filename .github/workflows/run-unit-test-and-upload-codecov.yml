@@ -14,6 +14,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+        with:
+          path: CleanSweep  # Checkout into a specific directory
 
       # Install ROS 2 Humble
       - name: Install ROS 2 Humble
@@ -46,7 +48,7 @@ jobs:
       - name: Build and Test
         run: |
           mkdir -p ros2_ws/src
-          cp -r ${{github.workspace}} ros2_ws/src/
+          mv CleanSweep ros2_ws/src/  # Move instead of copy
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
@@ -62,7 +64,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ${{github.workspace}}/ros2_ws/build/cleansweep/coverage.info
+          files: ros2_ws/build/cleansweep/coverage.info  # Updated path
           fail_ci_if_error: true
           verbose: true
           disable_search: true
