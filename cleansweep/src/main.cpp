@@ -1,7 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
-#include "cleansweep/object_detection.hpp"
-#include "cleansweep/obstacle_avoidance.hpp"
-#include "cleansweep/turtlebot.hpp"
+#include "cleansweep/object_detector.hpp"
+#include "cleansweep/walker_bot.hpp"
 
 int main(int argc, char* argv[]) {
     // Initialize ROS 2
