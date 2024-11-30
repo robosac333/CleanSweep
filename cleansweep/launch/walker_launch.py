@@ -54,7 +54,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Launch the robot control node - updated to match executable name in CMakeLists.txt
     robot_control_node = Node(
         package='cleansweep',
         executable='robot_control',
