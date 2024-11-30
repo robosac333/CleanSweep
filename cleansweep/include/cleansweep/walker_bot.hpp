@@ -81,9 +81,13 @@ class AlignmentState : public WalkerState {
 };
 
 class ApproachState : public WalkerState {
- public:
+public:
+  ApproachState() : rotation_timer_(nullptr), is_rotating_(false) {}
   void handle(Walker* walker,
               const sensor_msgs::msg::LaserScan::SharedPtr scan) override;
+private:
+  rclcpp::TimerBase::SharedPtr rotation_timer_;
+  bool is_rotating_;  // Add this flag
 };
 
 #endif  // WALKER_WALKER_BOT_HPP

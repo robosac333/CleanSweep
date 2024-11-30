@@ -65,83 +65,77 @@ find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 
-# Create library targets
-add_library(walker_bot
-  src/walker_bot.cpp
-)
+# # Create library targets
+# add_library(walker_bot
+#   src/walker_bot.cpp
+# )
 
-add_library(object_detector
+# add_library(object_detector
+#   src/object_detector.cpp
+# )
+
+# # Set include directories for libraries
+# target_include_directories(walker_bot PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>
+# )
+
+# target_include_directories(object_detector PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include>
+#   ${OpenCV_INCLUDE_DIRS}
+# )
+
+# # Link dependencies to libraries
+# ament_target_dependencies(walker_bot
+#   rclcpp
+#   geometry_msgs
+#   sensor_msgs
+#   cv_bridge
+# )
+
+# ament_target_dependencies(object_detector
+#   rclcpp
+#   sensor_msgs
+#   cv_bridge
+#   OpenCV
+# )
+
+# # Create executable
+# add_executable(robot_control src/main.cpp)
+
+# target_link_libraries(robot_control
+#   walker_bot
+#   object_detector
+# )
+
+# ament_target_dependencies(robot_control
+#   rclcpp
+# )
+add_executable(robot_control 
+  src/main.cpp 
+  src/walker_bot.cpp
   src/object_detector.cpp
 )
 
-# Set include directories for libraries
-target_include_directories(walker_bot PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(object_detector PUBLIC
+target_include_directories(robot_control PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${OpenCV_INCLUDE_DIRS}
 )
 
-# Link dependencies to libraries
-ament_target_dependencies(walker_bot
-  rclcpp
-  geometry_msgs
-  sensor_msgs
-  cv_bridge
+ament_target_dependencies(
+  robot_control
+  "rclcpp"
+  "sensor_msgs"
+  "geometry_msgs"
+  "cv_bridge"
+  "OpenCV"
 )
-
-ament_target_dependencies(object_detector
-  rclcpp
-  sensor_msgs
-  cv_bridge
-  OpenCV
-)
-
-# Create executable
-add_executable(robot_control src/main.cpp)
-
-target_link_libraries(robot_control
-  walker_bot
-  object_detector
-)
-
-ament_target_dependencies(robot_control
-  rclcpp
-)
-
-# Tests
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  
-  # Object detection test
-  ament_add_gtest(object_detection_test
-    test/object_detection_test.cpp
-    test/main.cpp
-  )
-  target_link_libraries(object_detection_test 
-    object_detector
-    ${OpenCV_LIBRARIES}
-  )
-  
-  # Walker bot test
-  ament_add_gtest(walker_bot_test
-    test/walker_bot_test.cpp
-    test/main.cpp
-  )
-  target_link_libraries(walker_bot_test
-    walker_bot
-  )
-endif()
 
 # Install targets
 install(TARGETS
   robot_control
-  walker_bot
-  object_detector
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -154,6 +148,47 @@ install(DIRECTORY
   worlds
   DESTINATION share/${PROJECT_NAME}
 )
+
+# Tests
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  
+  # Object detection test
+  ament_add_gtest(object_detection_test
+    test/object_detection_test.cpp
+    test/main.cpp
+    src/object_detector.cpp
+  )
+  target_include_directories(object_detection_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${OpenCV_INCLUDE_DIRS}
+  )
+  ament_target_dependencies(object_detection_test
+    "rclcpp"
+    "sensor_msgs"
+    "cv_bridge"
+    "OpenCV"
+  )
+  
+  # Walker bot test
+  ament_add_gtest(walker_bot_test
+    test/walker_bot_test.cpp
+    test/main.cpp
+    src/walker_bot.cpp
+    src/object_detector.cpp
+  )
+  target_include_directories(walker_bot_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${OpenCV_INCLUDE_DIRS}
+  )
+  ament_target_dependencies(walker_bot_test
+    "rclcpp"
+    "sensor_msgs"
+    "geometry_msgs"
+    "cv_bridge"
+    "OpenCV"
+  )
+endif()
 
 if(WANT_COVERAGE)
   # Custom target for lcov
