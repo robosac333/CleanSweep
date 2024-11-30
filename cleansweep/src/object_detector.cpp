@@ -1,5 +1,3 @@
-
-// object_detector.cpp
 #include "cleansweep/object_detector.hpp"
 
 ObjectDetector::ObjectDetector() {}
