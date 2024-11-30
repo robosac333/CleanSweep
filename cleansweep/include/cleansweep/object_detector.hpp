@@ -1,3 +1,4 @@
+// object_detector.hpp
 #ifndef WALKER_OBJECT_DETECTOR_HPP
 #define WALKER_OBJECT_DETECTOR_HPP
 
@@ -10,6 +11,8 @@ struct DetectionResult {
   bool detected;
   double distance;  // Distance to object in meters
   cv::Point2d center;  // Center of detected object
+  cv::Mat debug_mask;  // Store mask for visualization
+  cv::Mat debug_hsv;   // Store HSV image for visualization
 };
 
 class ObjectDetector {
@@ -28,7 +31,11 @@ class ObjectDetector {
   const double FOCAL_LENGTH = 525.0;  // in pixels
   const double KNOWN_WIDTH = 0.3;     // width of target object in meters
 
+  // Morphological operation kernel
+  const cv::Mat MORPH_KERNEL = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
+
   double estimate_distance(double pixel_width) const;
+  void apply_morphological_operations(cv::Mat& mask) const;
 };
 
 #endif  // WALKER_OBJECT_DETECTOR_HPP
