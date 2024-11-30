@@ -46,6 +46,7 @@ void Walker::image_callback(const sensor_msgs::msg::Image::SharedPtr msg) {
     if (current_alignment_state == nullptr && current_approach_state == nullptr) {
       change_state(new AlignmentState());
     }
+
   }
 }
 
@@ -90,7 +91,7 @@ bool Walker::is_path_clear(const sensor_msgs::msg::LaserScan::SharedPtr scan) co
 }
 
 void Walker::toggle_rotation_direction() {
-  rotation_direction_ *= -1.0;
+  rotation_direction_ *= 1.0;
 }
 
 rclcpp::TimerBase::SharedPtr Walker::create_timer(
@@ -140,6 +141,12 @@ void AlignmentState::handle(Walker* walker,
 
 void ApproachState::handle(Walker* walker,
                           const sensor_msgs::msg::LaserScan::SharedPtr scan) {
+  // If we're already rotating, just continue rotating until timer expires
+  if (is_rotating_) {
+    walker->publish_velocity(0.0, 0.3 * walker->get_rotation_direction());
+    return;
+  }
+
   // First check if path is clear
   if (!walker->is_path_clear(scan)) {
     RCLCPP_INFO(walker->get_logger(), "Obstacle detected during approach, switching to rotation state");
@@ -157,14 +164,27 @@ void ApproachState::handle(Walker* walker,
 
   // Check if we've reached the target distance
   if (walker->get_object_distance() <= walker->get_target_distance()) {
-    RCLCPP_INFO(walker->get_logger(), 
-                "Reached target distance (%.2f meters), stopping",
-                walker->get_object_distance());
-    walker->publish_velocity(0.0, 0.0);
+    if (!rotation_timer_) {
+      // Start the rotation and create the timer
+      RCLCPP_INFO(walker->get_logger(), 
+                  "Reached target distance, starting 10-second rotation");
+      
+      is_rotating_ = true;  // Set the rotating flag
+      
+      rotation_timer_ = walker->create_timer(
+          std::chrono::seconds(7),
+          [this, walker]() {
+            RCLCPP_INFO(walker->get_logger(), "10-second rotation complete, changing to forward state");
+            walker->change_state(new ForwardState());
+          });
+    }
+    
+    // Keep rotating
+    walker->publish_velocity(0.0, 0.3 * walker->get_rotation_direction());
     return;
   }
 
-  // Move forward at constant speed
+  // If not at target distance yet, keep moving forward
   walker->publish_velocity(0.5, 0.0);
   RCLCPP_INFO(walker->get_logger(), 
               "Approaching object. Current distance: %.2f meters, Target: %.2f meters",

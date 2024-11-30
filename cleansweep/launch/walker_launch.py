@@ -53,12 +53,14 @@ def generate_launch_description():
         ],
         output='screen'
     )
-
+        
     robot_control_node = Node(
         package='cleansweep',
         executable='robot_control',
         name='cleansweep',
-        output='screen'
+        output='screen',
+        # respawn=True,
+        # respawn_delay=1  
     )
 
     return LaunchDescription([
