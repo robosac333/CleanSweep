@@ -57,60 +57,54 @@ if(DOXYGEN_FOUND)
   )
 endif()
 
-# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(gazebo_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
-# Create library targets
-add_library(walker_bot
+# Main robot control executable
+add_executable(robot_control 
+  src/main.cpp 
   src/walker_bot.cpp
-)
-
-add_library(object_detector
   src/object_detector.cpp
 )
 
-# Set include directories for libraries
-target_include_directories(walker_bot PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-
-target_include_directories(object_detector PUBLIC
+target_include_directories(robot_control PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${OpenCV_INCLUDE_DIRS}
 )
 
-# Link dependencies to libraries
-ament_target_dependencies(walker_bot
-  rclcpp
-  geometry_msgs
-  sensor_msgs
-  cv_bridge
-)
-
-ament_target_dependencies(object_detector
-  rclcpp
-  sensor_msgs
-  cv_bridge
-  OpenCV
-)
-
-# Create executable
-add_executable(robot_control src/main.cpp)
-
-target_link_libraries(robot_control
-  walker_bot
-  object_detector
-)
-
 ament_target_dependencies(robot_control
   rclcpp
+  sensor_msgs
+  geometry_msgs
+  cv_bridge
+  OpenCV
+  gazebo_msgs
+)
+
+# Install targets
+install(TARGETS 
+  robot_control
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install headers
+install(DIRECTORY include/
+  DESTINATION include/
+)
+
+# Install other directories
+install(DIRECTORY
+  launch
+  worlds
+  models
+  DESTINATION share/${PROJECT_NAME}
 )
 
 # Tests
