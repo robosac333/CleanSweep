@@ -17,7 +17,7 @@ def generate_launch_description():
     world_file_path = PathJoinSubstitution([
         pkg_share,
         'worlds',
-        'empty_can_angle.world'
+        'empty_warehouse.world'
     ])
 
     # Declare the robot model argument
