@@ -43,21 +43,17 @@ DetectionResult ObjectDetector::detect_red_object(const sensor_msgs::msg::Image:
             double area = cv::contourArea(*largest_contour);
             if (area > DETECTION_AREA_THRESHOLD) {
                 cv::Rect bbox = cv::boundingRect(*largest_contour);
-                cv::Moments moments = cv::moments(*largest_contour);
+                result.center = cv::Point2d(
+                    bbox.x + bbox.width / 2.0,
+                    bbox.y + bbox.height / 2.0
+                );
                 result.detected = true;
-                result.center = cv::Point2d(moments.m10/moments.m00, moments.m01/moments.m00);
                 result.distance = estimate_distance(bbox.width);
 
-                cv::drawContours(display_image, std::vector<std::vector<cv::Point>>{*largest_contour},
-                    0, cv::Scalar(0, 255, 0), 2);
-                cv::circle(display_image, cv::Point(result.center), 5, cv::Scalar(0, 0, 255), -1);
-
-                std::string distance_text = "Distance: " + std::to_string(result.distance).substr(0, 4) + "m";
-                cv::putText(display_image, distance_text,
-                    cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1,
-                    cv::Scalar(0, 255, 0), 2);
-            }
-        }
+                cv::rectangle(result.debug_mask, bbox, cv::Scalar(255), 2);
+                cv::circle(result.debug_mask, cv::Point(result.center), 5, cv::Scalar(255), -1);
+    }
+}
 
         cv::namedWindow("HSV Image");
         cv::namedWindow("Turtlebot View");

@@ -54,6 +54,11 @@ bool Walker::is_path_clear(const sensor_msgs::msg::LaserScan::SharedPtr scan) co
     return true;
 }
 
+double Walker::calculate_angular_correction(double error) const {
+    double normalized_error = error / (image_width_ / 2.0);
+    return std::clamp(normalized_error * MAX_ANGULAR_SPEED, -MAX_ANGULAR_SPEED, MAX_ANGULAR_SPEED);
+}
+
 void ForwardState::handle(Walker* walker,
                          const sensor_msgs::msg::LaserScan::SharedPtr scan) {
     if (walker->is_path_clear(scan)) {
@@ -70,4 +75,40 @@ void RotationState::handle(Walker* walker,
     } else {
         walker->publish_velocity(0.0, 0.3);
     }
+}
+
+
+void AlignmentState::handle(Walker* walker,
+                           const sensor_msgs::msg::LaserScan::SharedPtr scan) {
+    if (!walker->is_red_object_detected()) {
+        walker->change_state(new ForwardState());
+        return;
+    }
+
+    double image_center_x = walker->get_image_width() / 2.0;
+    double object_center_x = walker->get_object_center().x;
+    double center_error = object_center_x - image_center_x;
+
+    if (std::abs(center_error) < walker->get_alignment_threshold()) {
+        walker->change_state(new ForwardState());
+        return;
+    }
+
+    double angular_velocity = walker->calculate_angular_correction(center_error);
+    walker->publish_velocity(0.0, -angular_velocity);
+}
+
+void ApproachState::handle(Walker* walker,
+                          const sensor_msgs::msg::LaserScan::SharedPtr scan) {
+    if (!walker->is_red_object_detected()) {
+        walker->change_state(new ForwardState());
+        return;
+    }
+
+    if (walker->get_object_distance() <= walker->get_target_distance()) {
+        walker->publish_velocity(0.0, 0.0);
+        return;
+    }
+
+    walker->publish_velocity(0.5, 0.0);
 }
