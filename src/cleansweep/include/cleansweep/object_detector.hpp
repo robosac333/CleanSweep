@@ -21,8 +21,8 @@ private:
     // Color ranges for coke can detection in HSV
     const cv::Scalar COLOR_LOWER_LIMIT{170, 50, 50};
     const cv::Scalar COLOR_UPPER_LIMIT{255, 200, 90};
-    const double DETECTION_AREA_THRESHOLD = 500.0;
-    
+    const double DETECTION_AREA_THRESHOLD = 0.0;   
+     
     // Camera parameters (adjust these based on your camera)
     const double FOCAL_LENGTH = 525.0; // in pixels
     const double KNOWN_WIDTH = 0.3; // width of target object in meters
