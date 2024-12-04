@@ -16,6 +16,9 @@ class Walker : public rclcpp::Node {
 public:
     Walker();
 
+    void toggle_rotation_direction();
+    double get_rotation_direction() const { return rotation_direction_; }
+
     // State management
     void change_state(WalkerState* new_state);
 
@@ -54,6 +57,9 @@ private:
     const double ALIGNMENT_THRESHOLD = 20.0;
     const double MAX_ANGULAR_SPEED = 0.3;
     const double TARGET_DISTANCE = 2.0;
+    double rotation_direction_{1.0};
+
+
 
     // Object detection
     ObjectDetector object_detector_;

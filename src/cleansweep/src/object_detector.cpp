@@ -29,8 +29,7 @@ DetectionResult ObjectDetector::detect_red_object(const sensor_msgs::msg::Image:
         mask(cv::Rect(0, 0, imageSize.width, 0.8*imageSize.height)) = 0;
 
         std::vector<std::vector<cv::Point>> contours;
-        std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(mask, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
         cv::Mat display_image = cv_ptr->image.clone();
         cv::drawContours(display_image, contours, -1, cv::Scalar(255, 0, 0), 2);
@@ -55,11 +54,10 @@ DetectionResult ObjectDetector::detect_red_object(const sensor_msgs::msg::Image:
     }
 }
 
-        cv::namedWindow("HSV Image");
-        cv::namedWindow("Turtlebot View");
-        cv::imshow("HSV Image", hsv_image);
-        cv::imshow("Turtlebot View", display_image);
-        cv::waitKey(1);
+        cv::namedWindow("Mask with Centroid", cv::WINDOW_NORMAL);
+        cv::namedWindow("HSV Image", cv::WINDOW_NORMAL);
+        cv::imshow("Mask with Centroid", result.debug_mask);
+        cv::imshow("HSV Image", result.debug_hsv);
         return result;
     } catch (const cv_bridge::Exception& e) {
         RCLCPP_ERROR(rclcpp::get_logger("ObjectDetector"),

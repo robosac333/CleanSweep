@@ -112,3 +112,7 @@ void ApproachState::handle(Walker* walker,
 
     walker->publish_velocity(0.5, 0.0);
 }
+
+void Walker::toggle_rotation_direction() {
+    rotation_direction_ *= -1.0;
+}
