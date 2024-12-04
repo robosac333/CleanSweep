@@ -26,7 +26,9 @@ private:
     // Camera parameters (adjust these based on your camera)
     const double FOCAL_LENGTH = 525.0; // in pixels
     const double KNOWN_WIDTH = 0.3; // width of target object in meters
+    const cv::Mat MORPH_KERNEL = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5));
     
+    void apply_morphological_operations(cv::Mat& mask) const;
     double estimate_distance(double pixel_width) const;
 };
 #endif // WALKER_OBJECT_DETECTOR_HPP

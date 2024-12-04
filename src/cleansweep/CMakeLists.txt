@@ -56,17 +56,14 @@ if(DOXYGEN_FOUND)
     COMMENT "Generate documentation"
   )
 endif()
-
+# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(gazebo_msgs REQUIRED)
-find_package(ament_index_cpp REQUIRED)
 
-# Main robot control executable
 add_executable(robot_control 
   src/main.cpp 
   src/walker_bot.cpp
@@ -79,31 +76,28 @@ target_include_directories(robot_control PUBLIC
   ${OpenCV_INCLUDE_DIRS}
 )
 
-ament_target_dependencies(robot_control
-  rclcpp
-  sensor_msgs
-  geometry_msgs
-  cv_bridge
-  OpenCV
-  gazebo_msgs
+ament_target_dependencies(
+  robot_control
+  "rclcpp"
+  "sensor_msgs"
+  "geometry_msgs"
+  "cv_bridge"
+  "OpenCV"
 )
 
 # Install targets
-install(TARGETS 
+install(TARGETS
   robot_control
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Install headers
 install(DIRECTORY include/
   DESTINATION include/
 )
 
-# Install other directories
 install(DIRECTORY
   launch
   worlds
-  models
   DESTINATION share/${PROJECT_NAME}
 )
 
@@ -115,45 +109,44 @@ if(BUILD_TESTING)
   ament_add_gtest(object_detection_test
     test/object_detection_test.cpp
     test/main.cpp
+    src/object_detector.cpp
   )
-  target_link_libraries(object_detection_test 
-    object_detector
-    ${OpenCV_LIBRARIES}
+  target_include_directories(object_detection_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${OpenCV_INCLUDE_DIRS}
+  )
+  ament_target_dependencies(object_detection_test
+    "rclcpp"
+    "sensor_msgs"
+    "cv_bridge"
+    "OpenCV"
   )
   
   # Walker bot test
   ament_add_gtest(walker_bot_test
     test/walker_bot_test.cpp
     test/main.cpp
+    src/walker_bot.cpp
+    src/object_detector.cpp
   )
-  target_link_libraries(walker_bot_test
-    walker_bot
+  target_include_directories(walker_bot_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${OpenCV_INCLUDE_DIRS}
+  )
+  ament_target_dependencies(walker_bot_test
+    "rclcpp"
+    "sensor_msgs"
+    "geometry_msgs"
+    "cv_bridge"
+    "OpenCV"
   )
 endif()
-
-# Install targets
-install(TARGETS
-  robot_control
-  walker_bot
-  object_detector
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY include/
-  DESTINATION include/
-)
-
-install(DIRECTORY
-  launch
-  worlds
-  DESTINATION share/${PROJECT_NAME}
-)
 
 if(WANT_COVERAGE)
   # Custom target for lcov
   add_custom_target(coverage
     COMMAND lcov --directory . --capture --output-file coverage.info
-    COMMAND lcov --remove coverage.info '/usr/*' '*/test/*' --output-file coverage.info
+    COMMAND lcov --remove coverage.info '/usr/' '/test/*' --output-file coverage.info
     COMMAND lcov --list coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating coverage report"

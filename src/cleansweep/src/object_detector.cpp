@@ -6,6 +6,11 @@ double ObjectDetector::estimate_distance(double pixel_width) const {
     return (KNOWN_WIDTH * FOCAL_LENGTH) / pixel_width;
 }
 
+void ObjectDetector::apply_morphological_operations(cv::Mat& mask) const {
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, MORPH_KERNEL);
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, MORPH_KERNEL);
+}
+
 DetectionResult ObjectDetector::detect_red_object(const sensor_msgs::msg::Image::SharedPtr msg) {
     DetectionResult result{false, 0.0, cv::Point2d(), cv::Mat(), cv::Mat()};
     try {
@@ -16,6 +21,7 @@ DetectionResult ObjectDetector::detect_red_object(const sensor_msgs::msg::Image:
 
         cv::Mat mask;
         cv::inRange(hsv_image, COLOR_LOWER_LIMIT, COLOR_UPPER_LIMIT, mask);
+        apply_morphological_operations(mask);
         result.debug_mask = mask.clone();
 
         // Rest of the code remains the same as original
