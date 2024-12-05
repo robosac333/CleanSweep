@@ -90,9 +90,9 @@ def generate_launch_description():
     walker_node = TimerAction(
         period=10.0,
         actions=[Node(
-            package='walker',
+            package='cleansweep',
             executable='robot_control',
-            name='walker',
+            name='cleansweep',
             output='screen'
         )]
     )
