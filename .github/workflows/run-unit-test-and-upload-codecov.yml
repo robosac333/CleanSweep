@@ -48,7 +48,7 @@ jobs:
       - name: Build and Test
         run: |
           mkdir -p ros2_ws/src
-          mv CleanSweep ros2_ws/src/  # Move instead of copy
+          mv CleanSweep ros2_ws/src/
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
@@ -56,8 +56,11 @@ jobs:
           colcon test --packages-select cleansweep
           cd build/cleansweep
           make coverage
-          lcov --remove coverage.info '/opt/ros/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file coverage.info
-          lcov --extract coverage.info '*/CleanSweep/src/*' '*/CleanSweep/include/*' --output-file coverage.info
+          # Additional explicit filtering
+          lcov --directory . --capture --output-file coverage.info
+          lcov --remove coverage.info '/opt/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' '*/ros/*' --output-file coverage.info
+          lcov --extract coverage.info '*/src/*' '*/include/*' --output-file coverage.info
+          lcov --remove coverage.info '/opt/ros/humble/*' --output-file coverage.info
 
       # Upload coverage result to CodeCov
       - name: Upload coverage result to CodeCov

@@ -146,13 +146,30 @@ endif()
 if(WANT_COVERAGE)
   # Custom target for lcov
   add_custom_target(coverage
-    COMMAND lcov --directory . --capture --output-file coverage.info
-    COMMAND lcov --remove coverage.info '/opt/ros/*' '/usr/' '/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file coverage.info
-    COMMAND lcov --extract coverage.info '${CMAKE_SOURCE_DIR}/src/*' '${CMAKE_SOURCE_DIR}/include/*' --output-file coverage.info
-    COMMAND lcov --list coverage.info
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMENT "Generating coverage report"
-  )
+  # Initial capture
+  COMMAND lcov --directory . --capture --output-file coverage.info
+  # Remove all unwanted paths
+  COMMAND lcov 
+    --remove coverage.info 
+    '/opt/*' 
+    '/usr/*' 
+    '*/test/*' 
+    '*/build/*' 
+    '*/install/*' 
+    '*_deps/*'
+    '*/ros/*'
+    --output-file coverage.info
+  # Only keep your package files
+  COMMAND lcov 
+    --extract coverage.info 
+    '${CMAKE_SOURCE_DIR}/src/*' 
+    '${CMAKE_SOURCE_DIR}/include/*' 
+    --output-file coverage.info
+  # Zero coverage for unused files
+  COMMAND lcov --remove coverage.info '/opt/ros/humble/*' --output-file coverage.info
+  COMMAND lcov --list coverage.info
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
   # Custom target for gcovr HTML report
   add_custom_target(coverage_html
