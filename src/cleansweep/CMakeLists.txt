@@ -147,7 +147,8 @@ if(WANT_COVERAGE)
   # Custom target for lcov
   add_custom_target(coverage
     COMMAND lcov --directory . --capture --output-file coverage.info
-    COMMAND lcov --remove coverage.info '/usr/' '/test/*' --output-file coverage.info
+    COMMAND lcov --remove coverage.info '/opt/ros/*' '/usr/' '/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file coverage.info
+    COMMAND lcov --extract coverage.info '${CMAKE_SOURCE_DIR}/src/*' '${CMAKE_SOURCE_DIR}/include/*' --output-file coverage.info
     COMMAND lcov --list coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Generating coverage report"

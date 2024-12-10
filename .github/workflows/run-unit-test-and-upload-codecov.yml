@@ -2,7 +2,7 @@ name: Run Unit Test and Upload Coverage Report
 
 on:
   push:
-    branches: [ "main", "sachin_updates" ]
+    branches: [ "main", "sachin_updates" "navdeep_updates"]
   pull_request:
     branches: [ "main" ]
     types: [opened]
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          path: CleanSweep  # Checkout into a specific directory
+          path: CleanSweep
 
       # Install ROS 2 Humble
       - name: Install ROS 2 Humble
@@ -56,8 +56,8 @@ jobs:
           colcon test --packages-select cleansweep
           cd build/cleansweep
           make coverage
-          lcov --capture --directory . --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' '*/test/*' '*_deps/*' --output-file coverage.info
+          lcov --remove coverage.info '/opt/ros/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file coverage.info
+          lcov --extract coverage.info '*/CleanSweep/src/*' '*/CleanSweep/include/*' --output-file coverage.info
 
       # Upload coverage result to CodeCov
       - name: Upload coverage result to CodeCov
