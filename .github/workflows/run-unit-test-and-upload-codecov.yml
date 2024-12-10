@@ -2,7 +2,7 @@ name: Run Unit Test and Upload Coverage Report
 
 on:
   push:
-    branches: [ "main", "sachin_updates" "navdeep_updates"]
+    branches: [ "main", "sachin_updates" , "navdeep_updates"]
   pull_request:
     branches: [ "main" ]
     types: [opened]
