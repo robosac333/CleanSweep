@@ -14,8 +14,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: CleanSweep
 
       # Install ROS 2 Humble
       - name: Install ROS 2 Humble
@@ -27,16 +25,12 @@ jobs:
           sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
           sudo apt update
-          sudo apt install -y ros-humble-ros-base
-          sudo apt install -y python3-colcon-common-extensions
-          sudo apt install -y ros-humble-cv-bridge
-          sudo apt install -y ros-humble-ament-cmake-gtest
+          sudo apt install -y ros-humble-ros-base python3-colcon-common-extensions ros-humble-cv-bridge ros-humble-ament-cmake-gtest
 
-      # Install dependencies for coverage and documentation
+      # Install dependencies
       - name: Install build packages
         run: |
-          sudo apt install -y doxygen lcov gcovr
-          sudo apt install -y libopencv-dev
+          sudo apt install -y doxygen lcov gcovr libopencv-dev
 
       # Source ROS 2
       - name: Source ROS 2
@@ -44,29 +38,45 @@ jobs:
           source /opt/ros/humble/setup.bash
           echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
 
+      # Debug workspace structure
+      - name: Debug directory structure
+        run: |
+          pwd
+          ls -la
+          
+      # Build and Test
       - name: Build and Test
         run: |
           mkdir -p ros2_ws/src
-          mv CleanSweep ros2_ws/src/
+          cp -r . ros2_ws/src/CleanSweep
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
           source install/setup.bash
-          # Run tests with verbose output
           colcon test --packages-select cleansweep --event-handlers console_direct+
-          # Generate coverage report
-          cd build/cleansweep
+
+      # Generate Coverage Report
+      - name: Generate Coverage
+        run: |
+          cd ros2_ws/build/cleansweep
           lcov --directory . --capture --output-file coverage.info
-          # More specific filtering
-          lcov --remove coverage.info '*/test/*' '*/build/*' '*/install/*' '*_deps/*' '/usr/*' '/opt/*' --output-file filtered.info
-          lcov --extract filtered.info '*/src/*' '*/include/cleansweep/*' --output-file coverage.info
+          lcov --remove coverage.info '/opt/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file filtered.info
+          lcov --extract filtered.info '*/src/cleansweep/src/*' '*/src/cleansweep/include/*' --output-file coverage.info
+          echo "Generated coverage report:"
+          lcov --list coverage.info
+
+      # Debug Coverage File
+      - name: Debug Coverage File
+        run: |
+          ls -la ros2_ws/build/cleansweep/
+          head -n 20 ros2_ws/build/cleansweep/coverage.info
 
       # Upload coverage result to CodeCov
       - name: Upload coverage result to CodeCov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ros2_ws/build/cleansweep/coverage.info  # Updated path
+          files: ros2_ws/build/cleansweep/coverage.info
           fail_ci_if_error: true
           verbose: true
           disable_search: true

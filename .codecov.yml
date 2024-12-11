@@ -1,0 +1,33 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+        target: 80%
+        paths:
+          - "src/cleansweep/src/**"
+          - "src/cleansweep/include/**"
+    patch:
+      default:
+        informational: true
+        target: 80%
+
+ignore:
+  - "**/test/**"
+  - "**/build/**"
+  - "**/install/**"
+  - "**/CMakeLists.txt"
+  - "**/*.xml"
+  - "**/*.sh"
+  - "**/*.py"
+
+fixes:
+  - "/home/sachin33sj/finalproject_ws/CleanSweep/::/"
+  - "ros2_ws/src/CleanSweep/::"
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
