@@ -2,10 +2,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include "cleansweep/object_detector.hpp"
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/logger.hpp>
 
 class ObjectDetectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    // Disable OpenCV GUI warnings
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
     detector = std::make_unique<ObjectDetector>();
   }
 

@@ -2,11 +2,15 @@
 #include <rclcpp/rclcpp.hpp>
 #include "cleansweep/walker_bot.hpp"
 #include "cleansweep/object_detector.hpp"
+#include <opencv2/core/utils/logger.hpp>
 #include <memory>
 
 class WalkerBotTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    // Disable OpenCV GUI warnings
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
+    
     if (!rclcpp::ok()) {
       rclcpp::init(0, nullptr);
     }
@@ -78,7 +82,6 @@ TEST_F(WalkerBotTest, TargetDistanceTest) {
 }
 
 TEST_F(WalkerBotTest, StateTransitions) {
-  // Test Forward to Rotation state transition
   auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
   scan_msg->ranges.resize(360, 2.0);  // Clear path
   
@@ -87,63 +90,40 @@ TEST_F(WalkerBotTest, StateTransitions) {
     scan_msg->ranges[i] = 0.5;  // Obstacle within SAFE_DISTANCE
   }
   
-  // Get initial state
   auto initial_state = walker_node->get_current_state();
-  
-  // Process scan
   walker_node->process_scan(scan_msg);
-  
-  // Verify state changed
   EXPECT_NE(initial_state, walker_node->get_current_state());
 }
+
 TEST_F(WalkerBotTest, ObjectDetection) {
-  // Create test image using OpenCV
   cv::Mat test_image(480, 640, CV_8UC3, cv::Scalar(0, 0, 0));
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
   
-  // Draw a rectangle with pure red HSV values that match detector thresholds
   cv::Rect red_rect(270, 190, 100, 100);
   cv::Mat roi = hsv_image(red_rect);
-  roi = cv::Scalar(175, 150, 70);  // H=175 (red), S=150 (saturated), V=70 (medium bright)
+  roi = cv::Scalar(175, 150, 70);
   
-  // Convert back to BGR for the message
   cv::cvtColor(hsv_image, test_image, cv::COLOR_HSV2BGR);
   
-  // Create ROS message from OpenCV image
   auto img_msg = std::make_shared<sensor_msgs::msg::Image>();
   img_msg->height = test_image.rows;
   img_msg->width = test_image.cols;
   img_msg->encoding = sensor_msgs::image_encodings::BGR8;
   img_msg->step = test_image.cols * test_image.elemSize();
-  img_msg->is_bigendian = false;
-  
-  size_t size = test_image.total() * test_image.elemSize();
-  img_msg->data.resize(size);
-  memcpy(img_msg->data.data(), test_image.data, size);
+  img_msg->data.resize(test_image.total() * test_image.elemSize());
+  memcpy(img_msg->data.data(), test_image.data, img_msg->data.size());
 
-  // Process image
   walker_node->process_image(img_msg);
-  
-  // Add small delay to allow processing
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
-  // Print debug info
-  RCLCPP_INFO(walker_node->get_logger(), 
-              "Object detection test: detected=%d, distance=%.2f", 
-              walker_node->is_red_object_detected(),
-              walker_node->get_object_distance());
-  
-  // Verify object detected
   EXPECT_TRUE(walker_node->is_red_object_detected());
 }
 
 TEST_F(WalkerBotTest, AlignmentStateTest) {
-  // Create a scan with clear path
   std::vector<float> ranges(360, 2.0);
   auto scan = createTestScan(ranges);
   
-  // Setup red object detection
   cv::Mat test_image(480, 640, CV_8UC3, cv::Scalar(0, 0, 0));
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
@@ -161,28 +141,21 @@ TEST_F(WalkerBotTest, AlignmentStateTest) {
   img_msg->data.resize(test_image.total() * test_image.elemSize());
   memcpy(img_msg->data.data(), test_image.data, img_msg->data.size());
 
-  // Process image to trigger alignment state
   walker_node->process_image(img_msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  // Verify state changed to alignment
   EXPECT_TRUE(walker_node->is_red_object_detected());
-  
-  // Process scan in alignment state
   walker_node->process_scan(scan);
 }
 
 TEST_F(WalkerBotTest, ApproachStateTest) {
-  // Create a scan with clear path
   std::vector<float> ranges(360, 2.0);
   auto scan = createTestScan(ranges);
   
-  // Setup red object detection at close range
   cv::Mat test_image(480, 640, CV_8UC3, cv::Scalar(0, 0, 0));
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
   
-  // Create larger object to simulate closer distance
   cv::Rect red_rect(220, 140, 200, 200);
   cv::Mat roi = hsv_image(red_rect);
   roi = cv::Scalar(175, 150, 70);
@@ -196,11 +169,9 @@ TEST_F(WalkerBotTest, ApproachStateTest) {
   img_msg->data.resize(test_image.total() * test_image.elemSize());
   memcpy(img_msg->data.data(), test_image.data, img_msg->data.size());
 
-  // Process image to trigger states
   walker_node->process_image(img_msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-  // Process multiple scans to allow state transitions
   for(int i = 0; i < 5; i++) {
     walker_node->process_scan(scan);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -208,27 +179,21 @@ TEST_F(WalkerBotTest, ApproachStateTest) {
 }
 
 TEST_F(WalkerBotTest, RotationStateWithTimerTest) {
-  // Create scan with obstacle
   std::vector<float> ranges(360, 2.0);
   for(int i = 18; i <= 342; i++) {
-    ranges[i] = 0.5;  // Obstacle in front
+    ranges[i] = 0.5;
   }
   auto scan = createTestScan(ranges);
 
-  // Process scan to enter rotation state
   walker_node->process_scan(scan);
-  
-  // Allow rotation timer to expire
   std::this_thread::sleep_for(std::chrono::seconds(6));
   
-  // Process scan again after timer
-  ranges = std::vector<float>(360, 2.0);  // Clear path
+  ranges = std::vector<float>(360, 2.0);
   auto clear_scan = createTestScan(ranges);
   walker_node->process_scan(clear_scan);
 }
 
 TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
-  // Initialize with a test image first
   cv::Mat test_image(480, 640, CV_8UC3, cv::Scalar(0, 0, 0));
   auto img_msg = std::make_shared<sensor_msgs::msg::Image>();
   img_msg->height = test_image.rows;
@@ -238,22 +203,14 @@ TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
   img_msg->data.resize(test_image.total() * test_image.elemSize());
   memcpy(img_msg->data.data(), test_image.data, img_msg->data.size());
   
-  // Process image to initialize width
   walker_node->process_image(img_msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
-  // Print debug info
-  RCLCPP_INFO(walker_node->get_logger(), 
-              "Image width initialized to: %d", 
-              walker_node->get_image_width());
-              
-  // Verify image width is initialized
-  ASSERT_GT(walker_node->get_image_width(), 0) << "Image width must be initialized before testing";
+  ASSERT_GT(walker_node->get_image_width(), 0);
   
   const double max_speed = walker_node->get_max_angular_speed();
   const double image_center = walker_node->get_image_width() / 2.0;
   
-  // Test cases with debug output
   struct TestCase {
     double error;
     double expected_min;
@@ -261,45 +218,34 @@ TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
   };
   
   std::vector<TestCase> test_cases = {
-    {0.0, -0.001, 0.001},                    // Center - should give ~0
-    {image_center, 0.0, max_speed},          // Full right - should give positive < max
-    {-image_center, -max_speed, 0.0},        // Full left - should give negative > -max
-    {image_center/2, 0.0, max_speed/2 + 0.1} // Halfway right - should give ~half max
+    {0.0, -0.001, 0.001},
+    {image_center, 0.0, max_speed},
+    {-image_center, -max_speed, 0.0},
+    {image_center/2, 0.0, max_speed/2 + 0.1}
   };
   
   for (const auto& tc : test_cases) {
     double result = walker_node->calculate_angular_correction(tc.error);
-    RCLCPP_INFO(walker_node->get_logger(), 
-                "Testing error=%.2f, got correction=%.2f (expected between %.2f and %.2f)",
-                tc.error, result, tc.expected_min, tc.expected_max);
-                
-    EXPECT_GE(result, tc.expected_min) 
-        << "Angular correction too low for error=" << tc.error;
-    EXPECT_LE(result, tc.expected_max) 
-        << "Angular correction too high for error=" << tc.error;
+    EXPECT_GE(result, tc.expected_min);
+    EXPECT_LE(result, tc.expected_max);
   }
 }
 
-// Add these test cases to walker_bot_test.cpp
-
 TEST_F(WalkerBotTest, StateTransitionCoverage) {
   auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
-  scan_msg->ranges.resize(360, 2.0);  // Clear path initially
+  scan_msg->ranges.resize(360, 2.0);
   
-  // Test Forward to Rotation (obstacle on left)
   for(int i = 0; i < 17; i++) {
     scan_msg->ranges[i] = 0.5;
   }
   walker_node->process_scan(scan_msg);
   
-  // Test Forward to Rotation (obstacle on right)
   scan_msg->ranges = std::vector<float>(360, 2.0);
   for(int i = 343; i < 360; i++) {
     scan_msg->ranges[i] = 0.5;
   }
   walker_node->process_scan(scan_msg);
   
-  // Test Rotation state completion
   std::this_thread::sleep_for(std::chrono::seconds(6));
   scan_msg->ranges = std::vector<float>(360, 2.0);
   walker_node->process_scan(scan_msg);
@@ -334,12 +280,7 @@ TEST_F(WalkerBotTest, ObstacleAvoidanceSequence) {
 }
 
 TEST_F(WalkerBotTest, VelocityPublishingVerification) {
-  // Test forward velocity
   walker_node->publish_velocity(0.5, 0.0);
-  
-  // Test rotation
   walker_node->publish_velocity(0.0, 0.3);
-  
-  // Test combined motion
   walker_node->publish_velocity(0.3, 0.2);
 }
