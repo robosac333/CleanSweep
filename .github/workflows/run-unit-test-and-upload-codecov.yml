@@ -27,10 +27,22 @@ jobs:
           sudo apt update
           sudo apt install -y ros-humble-ros-base python3-colcon-common-extensions ros-humble-cv-bridge ros-humble-ament-cmake-gtest
 
-      # Install dependencies
+      # Install dependencies including GTK and X11
       - name: Install build packages
         run: |
-          sudo apt install -y doxygen lcov gcovr libopencv-dev
+          sudo apt update
+          sudo apt install -y \
+            doxygen \
+            lcov \
+            gcovr \
+            libopencv-dev \
+            libgtk2.0-dev \
+            libgtk-3-dev \
+            pkg-config \
+            x11-xserver-utils \
+            xvfb \
+            mesa-utils \
+            libgl1-mesa-glx
 
       # Source ROS 2
       - name: Source ROS 2
@@ -44,7 +56,7 @@ jobs:
           pwd
           ls -la
           
-      # Build and Test
+      # Build and Test with Xvfb
       - name: Build and Test
         run: |
           mkdir -p ros2_ws/src/CleanSweep
@@ -55,7 +67,11 @@ jobs:
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
           source install/setup.bash
-          colcon test --packages-select cleansweep --event-handlers console_direct+
+          # Start Xvfb and run tests
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          sleep 3  # Give Xvfb some time to start
+          xvfb-run -a --server-args="-screen 0 1024x768x24" colcon test --packages-select cleansweep --event-handlers console_direct+
 
       # Generate Coverage Report
       - name: Generate Coverage

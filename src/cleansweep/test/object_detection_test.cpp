@@ -2,10 +2,13 @@
 #include <rclcpp/rclcpp.hpp>
 #include "cleansweep/object_detector.hpp"
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/utils/logger.hpp>
 
 class ObjectDetectorTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    // Disable OpenCV logging
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
     detector = std::make_unique<ObjectDetector>();
   }
 
@@ -16,21 +19,12 @@ class ObjectDetectorTest : public ::testing::Test {
     msg->encoding = sensor_msgs::image_encodings::BGR8;
     msg->step = cv_image.cols * cv_image.elemSize();
     msg->is_bigendian = false;
+    
     size_t size = cv_image.total() * cv_image.elemSize();
     msg->data.resize(size);
     memcpy(msg->data.data(), cv_image.data, size);
+    
     return msg;
-  }
-
-  cv::Mat createTestMat(int rows, int cols, const cv::Scalar& color) {
-    return cv::Mat(rows, cols, CV_8UC3, color);
-  }
-
-  cv::Mat createRedTestObject(int rows, int cols, const cv::Rect& redRect) {
-    cv::Mat image = cv::Mat(rows, cols, CV_8UC3, cv::Scalar(0, 0, 0));
-    cv::Mat modified = image.clone();
-    modified(redRect) = cv::Scalar(0, 0, 255); // Pure red in BGR
-    return modified;
   }
 
   std::unique_ptr<ObjectDetector> detector;
@@ -41,22 +35,32 @@ TEST_F(ObjectDetectorTest, InitializationTest) {
 }
 
 TEST_F(ObjectDetectorTest, NoDetectionOnBlackImage) {
-  cv::Mat black_image = createTestMat(480, 640, cv::Scalar(0, 0, 0));
+  cv::Mat black_image = cv::Mat::zeros(480, 640, CV_8UC3);
   auto image_msg = createTestImage(black_image);
   auto result = detector->detect_red_object(image_msg);
   EXPECT_FALSE(result.detected);
 }
 
 TEST_F(ObjectDetectorTest, NoDetectionOnWhiteImage) {
-  cv::Mat white_image = createTestMat(480, 640, cv::Scalar(255, 255, 255));
+  cv::Mat white_image = cv::Mat(480, 640, CV_8UC3, cv::Scalar(255, 255, 255));
   auto image_msg = createTestImage(white_image);
   auto result = detector->detect_red_object(image_msg);
   EXPECT_FALSE(result.detected);
 }
 
 TEST_F(ObjectDetectorTest, DetectsRedObject) {
-  cv::Mat test_image = createRedTestObject(480, 640, cv::Rect(270, 190, 100, 100));
-  auto image_msg = createTestImage(test_image);
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  cv::Mat hsv_image;
+  cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+  
+  cv::Rect red_rect(270, 190, 100, 100);
+  cv::Mat roi = hsv_image(red_rect);
+  roi = cv::Scalar(175, 150, 70);
+  
+  cv::Mat result;
+  cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+  
+  auto image_msg = createTestImage(result);
   auto detection = detector->detect_red_object(image_msg);
   
   EXPECT_TRUE(detection.detected);
@@ -77,8 +81,18 @@ TEST_F(ObjectDetectorTest, HandlesInvalidImageData) {
 }
 
 TEST_F(ObjectDetectorTest, DetectsLargerObject) {
-  cv::Mat test_image = createRedTestObject(480, 640, cv::Rect(300, 150, 150, 200));
-  auto image_msg = createTestImage(test_image);
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  cv::Mat hsv_image;
+  cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+  
+  cv::Rect large_rect(300, 150, 150, 200);
+  cv::Mat large_roi = hsv_image(large_rect);
+  large_roi = cv::Scalar(175, 150, 70);
+  
+  cv::Mat result;
+  cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+  
+  auto image_msg = createTestImage(result);
   auto detection = detector->detect_red_object(image_msg);
   
   EXPECT_TRUE(detection.detected);
@@ -90,12 +104,18 @@ TEST_F(ObjectDetectorTest, HandlesVariousImageSizes) {
   std::vector<std::pair<int, int>> sizes = {{320, 240}, {640, 480}};
   
   for (const auto& size : sizes) {
-    cv::Mat test_image = createRedTestObject(
-      size.second, 
-      size.first, 
-      cv::Rect(size.first/2 - 50, size.second/2 - 50, 100, 100)
-    );
-    auto image_msg = createTestImage(test_image);
+    cv::Mat test_image = cv::Mat::zeros(size.second, size.first, CV_8UC3);
+    cv::Mat hsv_image;
+    cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+    
+    cv::Rect red_rect(size.first/2 - 50, size.second/2 - 50, 100, 100);
+    cv::Mat roi = hsv_image(red_rect);
+    roi = cv::Scalar(175, 150, 70);
+    
+    cv::Mat result;
+    cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+    
+    auto image_msg = createTestImage(result);
     auto detection = detector->detect_red_object(image_msg);
     
     EXPECT_TRUE(detection.detected);

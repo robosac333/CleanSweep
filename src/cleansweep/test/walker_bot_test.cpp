@@ -106,96 +106,98 @@ TEST_F(WalkerBotTest, StateTransitions) {
   EXPECT_NE(initial_state, walker_node->get_current_state());
 }
 
-// TEST_F(WalkerBotTest, ObjectDetection) {
-//   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
-//   cv::Mat hsv_image;
-//   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+TEST_F(WalkerBotTest, ObjectDetection) {
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  cv::Mat hsv_image;
+  cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
   
-//   cv::Rect red_rect(270, 190, 100, 100);
-//   cv::Mat roi = hsv_image(red_rect);
-//   roi = cv::Scalar(175, 150, 70);
+  cv::Rect red_rect(270, 190, 100, 100);
+  cv::Mat roi = hsv_image(red_rect);
+  roi = cv::Scalar(175, 150, 70);
   
-//   cv::Mat result;
-//   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+  cv::Mat result;
+  cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
   
-//   auto img_msg = createImageMsg(result);
-//   walker_node->process_image(img_msg);
-//   std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  auto img_msg = createImageMsg(result);
+  walker_node->process_image(img_msg);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
-//   EXPECT_TRUE(walker_node->is_red_object_detected());
-// }
+  EXPECT_TRUE(walker_node->is_red_object_detected());
+}
 
-// TEST_F(WalkerBotTest, AlignmentStateTest) {
-//   // Create test image with red object
-//   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
-//   cv::Mat hsv_image;
-//   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+TEST_F(WalkerBotTest, AlignmentStateTest) {
+  // Create test image with red object
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  cv::Mat hsv_image;
+  cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
   
-//   cv::Rect red_rect(270, 190, 100, 100);
-//   cv::Mat roi = hsv_image(red_rect);
-//   roi = cv::Scalar(175, 150, 70);
+  cv::Rect red_rect(270, 190, 100, 100);
+  cv::Mat roi = hsv_image(red_rect);
+  roi = cv::Scalar(175, 150, 70);
   
-//   cv::Mat result;
-//   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+  cv::Mat result;
+  cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
   
-//   // First verify that we're starting in a non-alignment state
-//   auto* initial_alignment_state = dynamic_cast<AlignmentState*>(walker_node->get_current_state());
-//   EXPECT_EQ(initial_alignment_state, nullptr);
+  // First verify that we're starting in a non-alignment state
+  auto* initial_alignment_state = dynamic_cast<AlignmentState*>(walker_node->get_current_state());
+  EXPECT_EQ(initial_alignment_state, nullptr);
 
-//   // Process image and verify red object detection
-//   auto img_msg = createImageMsg(result);
-//   walker_node->process_image(img_msg);
-//   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//   EXPECT_TRUE(walker_node->is_red_object_detected());
+  // Process image and verify red object detection
+  auto img_msg = createImageMsg(result);
+  walker_node->process_image(img_msg);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  EXPECT_TRUE(walker_node->is_red_object_detected());
 
-//   // Process scan to trigger state transition
-//   std::vector<float> ranges(360, 2.0);  // Clear path
-//   auto scan = createTestScan(ranges);
-//   walker_node->process_scan(scan);
-//   std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Process scan to trigger state transition
+  std::vector<float> ranges(360, 2.0);  // Clear path
+  auto scan = createTestScan(ranges);
+  walker_node->process_scan(scan);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-//   // Now verify we've transitioned to alignment state
-//   auto* final_state = walker_node->get_current_state();
-//   bool is_alignment_or_approach = (dynamic_cast<AlignmentState*>(final_state) != nullptr) || 
-//                                 (dynamic_cast<ApproachState*>(final_state) != nullptr);
-//   EXPECT_TRUE(is_alignment_or_approach) << "Expected either AlignmentState or ApproachState";
-// }
+  // Now verify we've transitioned to alignment state
+  auto* final_state = walker_node->get_current_state();
+  bool is_alignment_or_approach = (dynamic_cast<AlignmentState*>(final_state) != nullptr) || 
+                                (dynamic_cast<ApproachState*>(final_state) != nullptr);
+  EXPECT_TRUE(is_alignment_or_approach) << "Expected either AlignmentState or ApproachState";
+}
 
-// TEST_F(WalkerBotTest, ApproachStateTest) {
-//   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
-//   cv::Mat hsv_image;
-//   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
+TEST_F(WalkerBotTest, ApproachStateTest) {
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  cv::Mat hsv_image;
+  cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
   
-//   cv::Rect red_rect(220, 140, 200, 200);
-//   cv::Mat roi = hsv_image(red_rect);
-//   roi = cv::Scalar(175, 150, 70);
+  cv::Rect red_rect(220, 140, 200, 200);
+  cv::Mat roi = hsv_image(red_rect);
+  roi = cv::Scalar(175, 150, 70);
   
-//   cv::Mat result;
-//   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
+  cv::Mat result;
+  cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
   
-//   auto img_msg = createImageMsg(result);
-//   walker_node->process_image(img_msg);
-//   std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  auto img_msg = createImageMsg(result);
+  walker_node->process_image(img_msg);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   
-//   EXPECT_TRUE(walker_node->is_red_object_detected());
+  EXPECT_TRUE(walker_node->is_red_object_detected());
 
-//   std::vector<float> ranges(360, 2.0);
-//   auto scan = createTestScan(ranges);
+  std::vector<float> ranges(360, 2.0);
+  auto scan = createTestScan(ranges);
   
-//   for(int i = 0; i < 5; i++) {
-//     walker_node->process_scan(scan);
-//     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//   }
+  for(int i = 0; i < 5; i++) {
+    walker_node->process_scan(scan);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
   
-//   auto* approach_state = dynamic_cast<ApproachState*>(walker_node->get_current_state());
-//   EXPECT_NE(approach_state, nullptr);
-// }
+  auto* approach_state = dynamic_cast<ApproachState*>(walker_node->get_current_state());
+  EXPECT_NE(approach_state, nullptr);
+}
 
 TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
-  // Instead of creating an actual image, just set the image width directly
+  cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+  auto img_msg = createImageMsg(test_image);
+  walker_node->process_image(img_msg);
+  
   const double max_speed = walker_node->get_max_angular_speed();
-  const double image_width = 640.0;  // Standard test image width
-  const double image_center = image_width / 2.0;
+  const double image_center = walker_node->get_image_width() / 2.0;
   
   struct TestCase {
     double error;
