@@ -48,12 +48,13 @@ jobs:
       - name: Build and Test
         run: |
           mkdir -p ros2_ws/src
-          cp -r . ros2_ws/src/CleanSweep
+          mv * ros2_ws/src/CleanSweep/ 2>/dev/null || true  # Move all files except hidden ones
+          mv .* ros2_ws/src/CleanSweep/ 2>/dev/null || true  # Move hidden files
           cd ros2_ws
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
           source install/setup.bash
-          colcon test --packages-select cleansweep --event-handlers console_direct+
+          colcon test --packages-select cleansweep --event-handlers console_direct+ --return-code-on-test-failure
 
       # Generate Coverage Report
       - name: Generate Coverage
