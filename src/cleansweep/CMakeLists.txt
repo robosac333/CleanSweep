@@ -103,44 +103,83 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Tests
+# # Tests
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+  
+#   # Object detection test
+#   ament_add_gtest(object_detection_test
+#     test/object_detection_test.cpp
+#     test/main.cpp
+#     src/object_detector.cpp
+#   )
+#   target_include_directories(object_detection_test PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     ${OpenCV_INCLUDE_DIRS}
+#   )
+#   ament_target_dependencies(object_detection_test
+#     "rclcpp"
+#     "sensor_msgs"
+#     "cv_bridge"
+#     "OpenCV"
+#   )
+  
+#   # Walker bot test
+#   ament_add_gtest(walker_bot_test
+#     test/walker_bot_test.cpp
+#     test/main.cpp
+#     src/walker_bot.cpp
+#     src/object_detector.cpp
+#   )
+#   target_include_directories(walker_bot_test PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#     ${OpenCV_INCLUDE_DIRS}
+#   )
+#   ament_target_dependencies(walker_bot_test
+#     "rclcpp"
+#     "sensor_msgs"
+#     "geometry_msgs"
+#     "cv_bridge"
+#     "OpenCV"
+#   )
+# endif()
+
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   
+  # Create a library for your source files
+  add_library(cleansweep_lib
+    src/object_detector.cpp
+    src/walker_bot.cpp
+  )
+  target_include_directories(cleansweep_lib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${OpenCV_INCLUDE_DIRS}
+  )
+  ament_target_dependencies(cleansweep_lib
+    rclcpp
+    sensor_msgs
+    geometry_msgs
+    cv_bridge
+    OpenCV
+  )
+
   # Object detection test
   ament_add_gtest(object_detection_test
     test/object_detection_test.cpp
     test/main.cpp
-    src/object_detector.cpp
   )
-  target_include_directories(object_detection_test PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    ${OpenCV_INCLUDE_DIRS}
-  )
-  ament_target_dependencies(object_detection_test
-    "rclcpp"
-    "sensor_msgs"
-    "cv_bridge"
-    "OpenCV"
+  target_link_libraries(object_detection_test
+    cleansweep_lib
   )
   
   # Walker bot test
   ament_add_gtest(walker_bot_test
     test/walker_bot_test.cpp
     test/main.cpp
-    src/walker_bot.cpp
-    src/object_detector.cpp
   )
-  target_include_directories(walker_bot_test PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    ${OpenCV_INCLUDE_DIRS}
-  )
-  ament_target_dependencies(walker_bot_test
-    "rclcpp"
-    "sensor_msgs"
-    "geometry_msgs"
-    "cv_bridge"
-    "OpenCV"
+  target_link_libraries(walker_bot_test
+    cleansweep_lib
   )
 endif()
 
