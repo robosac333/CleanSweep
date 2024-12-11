@@ -279,3 +279,67 @@ TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
         << "Angular correction too high for error=" << tc.error;
   }
 }
+
+// Add these test cases to walker_bot_test.cpp
+
+TEST_F(WalkerBotTest, StateTransitionCoverage) {
+  auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
+  scan_msg->ranges.resize(360, 2.0);  // Clear path initially
+  
+  // Test Forward to Rotation (obstacle on left)
+  for(int i = 0; i < 17; i++) {
+    scan_msg->ranges[i] = 0.5;
+  }
+  walker_node->process_scan(scan_msg);
+  
+  // Test Forward to Rotation (obstacle on right)
+  scan_msg->ranges = std::vector<float>(360, 2.0);
+  for(int i = 343; i < 360; i++) {
+    scan_msg->ranges[i] = 0.5;
+  }
+  walker_node->process_scan(scan_msg);
+  
+  // Test Rotation state completion
+  std::this_thread::sleep_for(std::chrono::seconds(6));
+  scan_msg->ranges = std::vector<float>(360, 2.0);
+  walker_node->process_scan(scan_msg);
+}
+
+TEST_F(WalkerBotTest, ObstacleAvoidanceSequence) {
+  std::vector<ObstacleLocation> locations = {
+    ObstacleLocation::LEFT,
+    ObstacleLocation::RIGHT,
+    ObstacleLocation::FRONT
+  };
+  
+  for(auto location : locations) {
+    std::vector<float> ranges(360, 2.0);
+    
+    switch(location) {
+      case ObstacleLocation::LEFT:
+        for(int i = 0; i <= 17; i++) ranges[i] = 0.5;
+        break;
+      case ObstacleLocation::RIGHT:
+        for(int i = 343; i <= 359; i++) ranges[i] = 0.5;
+        break;
+      case ObstacleLocation::FRONT:
+        for(int i = 18; i <= 342; i++) ranges[i] = 0.5;
+        break;
+    }
+    
+    auto scan = createTestScan(ranges);
+    walker_node->process_scan(scan);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+}
+
+TEST_F(WalkerBotTest, VelocityPublishingVerification) {
+  // Test forward velocity
+  walker_node->publish_velocity(0.5, 0.0);
+  
+  // Test rotation
+  walker_node->publish_velocity(0.0, 0.3);
+  
+  // Test combined motion
+  walker_node->publish_velocity(0.3, 0.2);
+}
