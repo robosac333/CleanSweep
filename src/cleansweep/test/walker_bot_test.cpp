@@ -1,25 +1,26 @@
-#include <gtest/gtest.h>
-#include <rclcpp/rclcpp.hpp>
 #include "cleansweep/walker_bot.hpp"
-#include "cleansweep/object_detector.hpp"
-#include <opencv2/core/utils/logger.hpp>
+
+#include <gtest/gtest.h>
+
 #include <memory>
+#include <opencv2/core/utils/logger.hpp>
+#include <rclcpp/rclcpp.hpp>
+
+#include "cleansweep/object_detector.hpp"
 
 class WalkerBotTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Disable OpenCV GUI warnings
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
-    
+
     if (!rclcpp::ok()) {
       rclcpp::init(0, nullptr);
     }
     walker_node = std::make_shared<Walker>();
   }
 
-  void TearDown() override {
-    walker_node.reset();
-  }
+  void TearDown() override { walker_node.reset(); }
 
   std::shared_ptr<Walker> walker_node;
 
@@ -69,14 +70,16 @@ TEST_F(WalkerBotTest, SetRotationDirectionTest) {
 TEST_F(WalkerBotTest, ObstacleDetectionTest) {
   std::vector<float> ranges(360, 2.0);
   auto scan = createTestScan(ranges);
-  EXPECT_EQ(walker_node->detect_obstacle_location(scan), ObstacleLocation::NONE);
+  EXPECT_EQ(walker_node->detect_obstacle_location(scan),
+            ObstacleLocation::NONE);
 
   ranges = std::vector<float>(360, 2.0);
-  for(int i = 18; i <= 342; i++) {
+  for (int i = 18; i <= 342; i++) {
     ranges[i] = 0.5;
   }
   scan = createTestScan(ranges);
-  EXPECT_EQ(walker_node->detect_obstacle_location(scan), ObstacleLocation::FRONT);
+  EXPECT_EQ(walker_node->detect_obstacle_location(scan),
+            ObstacleLocation::FRONT);
 }
 
 TEST_F(WalkerBotTest, PathClearTest) {
@@ -96,11 +99,11 @@ TEST_F(WalkerBotTest, TargetDistanceTest) {
 TEST_F(WalkerBotTest, StateTransitions) {
   auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
   scan_msg->ranges.resize(360, 2.0);
-  
-  for(int i = 0; i < 30; i++) {
+
+  for (int i = 0; i < 30; i++) {
     scan_msg->ranges[i] = 0.5;
   }
-  
+
   auto initial_state = walker_node->get_current_state();
   walker_node->process_scan(scan_msg);
   EXPECT_NE(initial_state, walker_node->get_current_state());
@@ -110,18 +113,18 @@ TEST_F(WalkerBotTest, ObjectDetection) {
   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
-  
+
   cv::Rect red_rect(270, 190, 100, 100);
   cv::Mat roi = hsv_image(red_rect);
   roi = cv::Scalar(175, 150, 70);
-  
+
   cv::Mat result;
   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
-  
+
   auto img_msg = createImageMsg(result);
   walker_node->process_image(img_msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  
+
   EXPECT_TRUE(walker_node->is_red_object_detected());
 }
 
@@ -130,16 +133,17 @@ TEST_F(WalkerBotTest, AlignmentStateTest) {
   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
-  
+
   cv::Rect red_rect(270, 190, 100, 100);
   cv::Mat roi = hsv_image(red_rect);
   roi = cv::Scalar(175, 150, 70);
-  
+
   cv::Mat result;
   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
-  
+
   // First verify that we're starting in a non-alignment state
-  auto* initial_alignment_state = dynamic_cast<AlignmentState*>(walker_node->get_current_state());
+  auto* initial_alignment_state =
+      dynamic_cast<AlignmentState*>(walker_node->get_current_state());
   EXPECT_EQ(initial_alignment_state, nullptr);
 
   // Process image and verify red object detection
@@ -156,38 +160,41 @@ TEST_F(WalkerBotTest, AlignmentStateTest) {
 
   // Now verify we've transitioned to alignment state
   auto* final_state = walker_node->get_current_state();
-  bool is_alignment_or_approach = (dynamic_cast<AlignmentState*>(final_state) != nullptr) || 
-                                (dynamic_cast<ApproachState*>(final_state) != nullptr);
-  EXPECT_TRUE(is_alignment_or_approach) << "Expected either AlignmentState or ApproachState";
+  bool is_alignment_or_approach =
+      (dynamic_cast<AlignmentState*>(final_state) != nullptr) ||
+      (dynamic_cast<ApproachState*>(final_state) != nullptr);
+  EXPECT_TRUE(is_alignment_or_approach)
+      << "Expected either AlignmentState or ApproachState";
 }
 
 TEST_F(WalkerBotTest, ApproachStateTest) {
   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
   cv::Mat hsv_image;
   cv::cvtColor(test_image, hsv_image, cv::COLOR_BGR2HSV);
-  
+
   cv::Rect red_rect(220, 140, 200, 200);
   cv::Mat roi = hsv_image(red_rect);
   roi = cv::Scalar(175, 150, 70);
-  
+
   cv::Mat result;
   cv::cvtColor(hsv_image, result, cv::COLOR_HSV2BGR);
-  
+
   auto img_msg = createImageMsg(result);
   walker_node->process_image(img_msg);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  
+
   EXPECT_TRUE(walker_node->is_red_object_detected());
 
   std::vector<float> ranges(360, 2.0);
   auto scan = createTestScan(ranges);
-  
-  for(int i = 0; i < 5; i++) {
+
+  for (int i = 0; i < 5; i++) {
     walker_node->process_scan(scan);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  
-  auto* approach_state = dynamic_cast<ApproachState*>(walker_node->get_current_state());
+
+  auto* approach_state =
+      dynamic_cast<ApproachState*>(walker_node->get_current_state());
   EXPECT_NE(approach_state, nullptr);
 }
 
@@ -195,23 +202,22 @@ TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
   cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
   auto img_msg = createImageMsg(test_image);
   walker_node->process_image(img_msg);
-  
+
   const double max_speed = walker_node->get_max_angular_speed();
   const double image_center = walker_node->get_image_width() / 2.0;
-  
+
   struct TestCase {
     double error;
     double expected_min;
     double expected_max;
   };
-  
+
   std::vector<TestCase> test_cases = {
-    {0.0, -0.001, 0.001},
-    {image_center, 0.0, max_speed},
-    {-image_center, -max_speed, 0.0},
-    {image_center/2, 0.0, max_speed/2 + 0.1}
-  };
-  
+      {0.0, -0.001, 0.001},
+      {image_center, 0.0, max_speed},
+      {-image_center, -max_speed, 0.0},
+      {image_center / 2, 0.0, max_speed / 2 + 0.1}};
+
   for (const auto& tc : test_cases) {
     double result = walker_node->calculate_angular_correction(tc.error);
     EXPECT_GE(result, tc.expected_min);
@@ -222,18 +228,18 @@ TEST_F(WalkerBotTest, AngularCorrectionCalculationTest) {
 TEST_F(WalkerBotTest, StateTransitionCoverage) {
   auto scan_msg = std::make_shared<sensor_msgs::msg::LaserScan>();
   scan_msg->ranges.resize(360, 2.0);
-  
-  for(int i = 0; i < 17; i++) {
+
+  for (int i = 0; i < 17; i++) {
     scan_msg->ranges[i] = 0.5;
   }
   walker_node->process_scan(scan_msg);
-  
+
   scan_msg->ranges = std::vector<float>(360, 2.0);
-  for(int i = 343; i < 360; i++) {
+  for (int i = 343; i < 360; i++) {
     scan_msg->ranges[i] = 0.5;
   }
   walker_node->process_scan(scan_msg);
-  
+
   std::this_thread::sleep_for(std::chrono::seconds(6));
   scan_msg->ranges = std::vector<float>(360, 2.0);
   walker_node->process_scan(scan_msg);
@@ -241,28 +247,25 @@ TEST_F(WalkerBotTest, StateTransitionCoverage) {
 
 TEST_F(WalkerBotTest, ObstacleAvoidanceSequence) {
   std::vector<ObstacleLocation> locations = {
-    ObstacleLocation::LEFT,
-    ObstacleLocation::RIGHT,
-    ObstacleLocation::FRONT
-  };
-  
-  for(auto location : locations) {
+      ObstacleLocation::LEFT, ObstacleLocation::RIGHT, ObstacleLocation::FRONT};
+
+  for (auto location : locations) {
     std::vector<float> ranges(360, 2.0);
-    
-    switch(location) {
+
+    switch (location) {
       case ObstacleLocation::LEFT:
-        for(int i = 0; i <= 17; i++) ranges[i] = 0.5;
+        for (int i = 0; i <= 17; i++) ranges[i] = 0.5;
         break;
       case ObstacleLocation::RIGHT:
-        for(int i = 343; i <= 359; i++) ranges[i] = 0.5;
+        for (int i = 343; i <= 359; i++) ranges[i] = 0.5;
         break;
       case ObstacleLocation::FRONT:
-        for(int i = 18; i <= 342; i++) ranges[i] = 0.5;
+        for (int i = 18; i <= 342; i++) ranges[i] = 0.5;
         break;
       case ObstacleLocation::NONE:
         break;
     }
-    
+
     auto scan = createTestScan(ranges);
     walker_node->process_scan(scan);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
