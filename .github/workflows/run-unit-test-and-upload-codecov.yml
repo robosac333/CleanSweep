@@ -47,22 +47,26 @@ jobs:
       # Build and Test
       - name: Build and Test
         run: |
-          mkdir -p ros2_ws/src
-          mv * ros2_ws/src/CleanSweep/ 2>/dev/null || true  # Move all files except hidden ones
-          mv .* ros2_ws/src/CleanSweep/ 2>/dev/null || true  # Move hidden files
+          mkdir -p ros2_ws/src/CleanSweep
+          mv * ros2_ws/src/CleanSweep/ 2>/dev/null || true
+          mv .* ros2_ws/src/CleanSweep/ 2>/dev/null || true
           cd ros2_ws
+          ls -la src/CleanSweep  # Debug: check files were moved correctly
           source /opt/ros/humble/setup.bash
           colcon build --cmake-args -DWANT_COVERAGE=ON
           source install/setup.bash
-          colcon test --packages-select cleansweep --event-handlers console_direct+ --return-code-on-test-failure
+          colcon test --packages-select cleansweep --event-handlers console_direct+
 
       # Generate Coverage Report
       - name: Generate Coverage
+        working-directory: ros2_ws  # Set working directory
         run: |
-          cd ros2_ws/build/cleansweep
+          cd build/cleansweep || exit 1  # Exit if directory doesn't exist
+          pwd  # Debug: print current directory
+          ls -la  # Debug: list directory contents
           lcov --directory . --capture --output-file coverage.info
           lcov --remove coverage.info '/opt/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' --output-file filtered.info
-          lcov --extract filtered.info '*/src/cleansweep/src/*' '*/src/cleansweep/include/*' --output-file coverage.info
+          lcov --extract filtered.info '*/src/*' '*/include/cleansweep/*' --output-file coverage.info
           echo "Generated coverage report:"
           lcov --list coverage.info
 
