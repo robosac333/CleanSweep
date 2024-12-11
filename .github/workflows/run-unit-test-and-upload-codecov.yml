@@ -15,60 +15,92 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          path: CleanSweep
+          path: src/cleansweep  # Change checkout path to match ROS workspace structure
 
-      # Install ROS 2 Humble
-      - name: Install ROS 2 Humble
+      # Install ROS 2 Humble and dependencies
+      - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y software-properties-common
+          # Add ROS 2 apt repository
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
           sudo add-apt-repository universe
-          sudo apt update && sudo apt install -y curl
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-          sudo apt update
-          sudo apt install -y ros-humble-ros-base
-          sudo apt install -y python3-colcon-common-extensions
-          sudo apt install -y ros-humble-cv-bridge
-          sudo apt install -y ros-humble-ament-cmake-gtest
+          
+          # Install required packages
+          sudo apt-get update
+          sudo apt-get install -y \
+            ros-humble-ros-base \
+            python3-colcon-common-extensions \
+            ros-humble-cv-bridge \
+            ros-humble-ament-cmake-gtest \
+            doxygen \
+            lcov \
+            gcovr \
+            libopencv-dev
 
-      # Install dependencies for coverage and documentation
-      - name: Install build packages
-        run: |
-          sudo apt install -y doxygen lcov gcovr
-          sudo apt install -y libopencv-dev
-
-      # Source ROS 2
-      - name: Source ROS 2
-        run: |
-          source /opt/ros/humble/setup.bash
-          echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-
-      # Create workspace and build
+      # Build and test
       - name: Build and Test
         run: |
-          mkdir -p ros2_ws/src
-          mv CleanSweep ros2_ws/src/
-          cd ros2_ws
           source /opt/ros/humble/setup.bash
-          colcon build --cmake-args -DWANT_COVERAGE=ON
+          colcon build \
+            --cmake-args \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DWANT_COVERAGE=ON
+          
+          # Run tests
           source install/setup.bash
+          colcon test --packages-select cleansweep --event-handlers console_direct+
+          
+          # Generate coverage report
+          cd build/cleansweep
+          
+          # Clear previous coverage data
+          find . -name "*.gcda" -delete
+          lcov --zerocounters --directory .
+          
+          # Run tests again for coverage
+          cd ../..
           colcon test --packages-select cleansweep
           cd build/cleansweep
-          make coverage
-          # Additional explicit filtering
+          
+          # Capture coverage data
           lcov --directory . --capture --output-file coverage.info
-          lcov --remove coverage.info '/opt/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' '*/ros/*' --output-file coverage.info
-          lcov --extract coverage.info '*/src/*' '*/include/*' --output-file coverage.info
-          lcov --remove coverage.info '/opt/ros/humble/*' --output-file coverage.info
+          
+          # Filter coverage data
+          lcov \
+            --remove coverage.info \
+            '/usr/*' '/opt/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*' '*/ros/*' \
+            --output-file coverage.filtered
+          
+          # Extract only project files
+          lcov \
+            --extract coverage.filtered \
+            '${{ github.workspace }}/src/cleansweep/src/*' \
+            '${{ github.workspace }}/src/cleansweep/include/cleansweep/*' \
+            --output-file coverage.final
+          
+          # Generate HTML report
+          genhtml coverage.final \
+            --output-directory coverage_report \
+            --title "Coverage Report" \
+            --legend \
+            --show-details
 
-      # Upload coverage result to CodeCov
-      - name: Upload coverage result to CodeCov
+      # Upload coverage results
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ros2_ws/build/cleansweep/coverage.info  # Updated path
+          files: build/cleansweep/coverage.final
           fail_ci_if_error: true
           verbose: true
           disable_search: true
           plugin: none
+          
+      # Upload coverage report as artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: build/cleansweep/coverage_report

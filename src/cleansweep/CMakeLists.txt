@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.8)
 project(cleansweep)
 
@@ -143,40 +144,71 @@ if(BUILD_TESTING)
   )
 endif()
 
-if(WANT_COVERAGE)
-  # Custom target for lcov
-  add_custom_target(coverage
-  # Initial capture
-  COMMAND lcov --directory . --capture --output-file coverage.info
-  # Remove all unwanted paths
-  COMMAND lcov 
-    --remove coverage.info 
-    '/opt/*' 
-    '/usr/*' 
-    '*/test/*' 
-    '*/build/*' 
-    '*/install/*' 
-    '*_deps/*'
-    '*/ros/*'
-    --output-file coverage.info
-  # Only keep your package files
-  COMMAND lcov 
-    --extract coverage.info 
-    '${CMAKE_SOURCE_DIR}/src/*' 
-    '${CMAKE_SOURCE_DIR}/include/*' 
-    --output-file coverage.info
-  # Zero coverage for unused files
-  COMMAND lcov --remove coverage.info '/opt/ros/humble/*' --output-file coverage.info
-  COMMAND lcov --list coverage.info
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+# if(WANT_COVERAGE)
+#   # Custom target for lcov
+#   add_custom_target(coverage
+#     COMMAND lcov --directory build/frontier_explorer --capture --output-file coverage.info
+#     COMMAND lcov --remove coverage.info '/opt/*' '/usr/*' '*/test/*' '*/build/*' '*/install/*' --output-file coverage.filtered
+#     COMMAND lcov --list coverage.filtered
+#     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+#     COMMENT "Generating coverage report"
 
-  # Custom target for gcovr HTML report
-  add_custom_target(coverage_html
-    COMMAND gcovr -r ${CMAKE_SOURCE_DIR} --html --html-details -o coverage.html
+#   #   COMMAND lcov 
+#   #     --extract coverage.info 
+#   #     '${CMAKE_SOURCE_DIR}/src/*' 
+#   #     '${CMAKE_SOURCE_DIR}/include/*' 
+#   #     --output-file coverage.info
+#   # WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+# )
+
+if(WANT_COVERAGE)
+  add_custom_target(coverage
+    # Clear previous coverage data
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/coverage
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
+    COMMAND find ${CMAKE_BINARY_DIR} -name "*.gcda" -delete
+    COMMAND lcov --directory . --zerocounters
+    
+    # Run tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    
+    # Capture coverage data
+    COMMAND lcov --directory . --capture --output-file ${CMAKE_BINARY_DIR}/coverage/coverage.info
+    
+    # Filter out system files and test files
+    COMMAND lcov 
+      --remove ${CMAKE_BINARY_DIR}/coverage/coverage.info 
+      '/usr/*' '/opt/*' '*/test/*' '*/build/*' '*/install/*' '*_deps/*'
+      --output-file ${CMAKE_BINARY_DIR}/coverage/coverage.filtered
+    
+    # Extract only your source files including headers
+    COMMAND lcov
+      --extract ${CMAKE_BINARY_DIR}/coverage/coverage.filtered
+      '${CMAKE_CURRENT_SOURCE_DIR}/src/*'
+      '${CMAKE_CURRENT_SOURCE_DIR}/include/cleansweep/*'
+      --output-file ${CMAKE_BINARY_DIR}/coverage/coverage.final
+    
+    # Generate HTML report for better visualization
+    COMMAND genhtml ${CMAKE_BINARY_DIR}/coverage/coverage.final 
+      --output-directory ${CMAKE_BINARY_DIR}/coverage/html
+      --title "Coverage Report"
+      --legend
+      --show-details
+    
+    # Generate report
+    COMMAND lcov --list ${CMAKE_BINARY_DIR}/coverage/coverage.final
+    
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMENT "Generating HTML coverage report"
+    COMMENT "Generating coverage report"
   )
 endif()
+
+  # Custom target for gcovr HTML report
+  # add_custom_target(coverage_html
+  #   COMMAND gcovr -r ${CMAKE_SOURCE_DIR} --html --html-details -o coverage.html
+  #   WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  #   COMMENT "Generating HTML coverage report"
+  # )
+# endif()
 
 ament_package()

@@ -1,4 +1,6 @@
 #include "cleansweep/walker_bot.hpp"
+#include <opencv2/opencv.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 
 Walker::Walker() : Node("walker"), rotation_direction_(1.0), image_width_(0) {
   vel_publisher_ =
