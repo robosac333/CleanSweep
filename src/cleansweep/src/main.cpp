@@ -20,7 +20,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * @author Sachin Ramesh Jadhav
+ * @authors Sachin Ramesh Jadhav, Navdeep Singh
  * @date December 2024
  * @version 1.0
  */

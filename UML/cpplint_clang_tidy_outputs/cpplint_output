@@ -1,0 +1,8 @@
+navdeep@navdeep-Zephyrus-G15-GA503RM-GA503RM:~/finalproject_ws$ cpplint --filter="-legal/copyright" $( find . -name *.cpp | grep -v "/build/" )
+Done processing ./CleanSweep/src/cleansweep/src/main.cpp
+Done processing ./CleanSweep/src/cleansweep/src/object_detector.cpp
+Done processing ./CleanSweep/src/cleansweep/src/walker_bot.cpp
+Done processing ./CleanSweep/src/cleansweep/test/main.cpp
+Done processing ./CleanSweep/src/cleansweep/test/object_detection_test.cpp
+Done processing ./CleanSweep/src/cleansweep/test/walker_bot_test.cpp
+navdeep@navdeep-Zephyrus-G15-GA503RM-GA503RM:~/finalproject_ws$ 

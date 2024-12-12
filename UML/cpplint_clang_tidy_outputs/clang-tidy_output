@@ -1,0 +1,2 @@
+navdeep@navdeep-Zephyrus-G15-GA503RM-GA503RM:~/finalproject_ws$ clang-tidy -p build $( find . -name *.cpp | grep -v "/build/" )
+navdeep@navdeep-Zephyrus-G15-GA503RM-GA503RM:~/finalproject_ws$ 
